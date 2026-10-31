@@ -1,0 +1,20 @@
+# Core
+numpy>=1.24
+opencv-python>=4.8
+mediapipe>=0.10
+
+# Training
+tensorflow>=2.13          # includes Keras
+matplotlib>=3.7           # training-curve plots (Figure 4.2)
+
+# Browser export
+tensorflowjs>=4.10
+
+# Server (server-side comparison baseline)
+fastapi>=0.104
+uvicorn[standard]>=0.24
+pydantic>=2.0
+
+# Note: on Apple Silicon use tensorflow-macos + tensorflow-metal instead of
+# tensorflow. mediapipe wheels are available for Windows/Linux/macOS x86 and
+# Apple Silicon via pip.

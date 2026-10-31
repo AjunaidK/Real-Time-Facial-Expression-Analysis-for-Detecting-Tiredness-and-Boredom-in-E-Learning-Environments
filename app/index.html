@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EngageSense — Real-Time Tiredness & Boredom Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+
+<!-- top bar -->
+<div class="topbar">
+  <div class="logo">
+    <div class="dot">E</div>
+    <div><b>EngageSense</b><span>· ScaleUpGym prototype</span></div>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill" id="modePill"><span class="led"></span> initialising…</span>
+  <span class="pill" id="livePill"><span class="led"></span> idle</span>
+</div>
+
+<div class="app">
+<div class="grid">
+
+  <!-- LEFT: stage + lesson + controls -->
+  <div>
+    <div class="card">
+      <div class="hd">
+        <h3>Live engagement monitor</h3>
+        <span class="tag" id="fpsTag">— fps</span>
+      </div>
+      <div class="bd">
+        <div class="stage-wrap">
+          <div class="stage">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="overlay"></canvas>
+            <div class="curtain" id="curtain">
+              <div>
+                <h2>Watch a lesson, and we'll watch for fatigue</h2>
+                <p>This prototype analyses your facial expression <b>entirely in your
+                  browser</b> to detect tiredness and boredom while you watch a training
+                  video. No image ever leaves your device. Grant camera access to begin —
+                  a 5-second calibration learns your alert baseline first.</p>
+              </div>
+            </div>
+            <div class="warming hidden" id="warming">building analysis window… 0%</div>
+          </div>
+
+          <!-- the "lesson" being watched -->
+          <div class="lesson">
+            <div class="video-controls">
+              <input id="videoUrl" type="text" placeholder="Paste a YouTube link or a direct video URL…" />
+              <button id="loadUrlBtn" class="ghost small">Load</button>
+              <label class="upload-btn small" for="videoFile">Upload file</label>
+              <input id="videoFile" type="file" accept="video/*" class="hidden" />
+            </div>
+            <div class="video-holder">
+              <video id="lesson" controls preload="metadata" poster="./assets/lesson_poster.svg">
+                <source src="./assets/lesson.mp4" type="video/mp4" />
+              </video>
+              <iframe id="ytFrame" class="hidden" allow="autoplay; encrypted-media"
+                      allowfullscreen frameborder="0"></iframe>
+            </div>
+            <div class="meta"><b id="lessonTitle">Module 3 · Cash-flow forecasting</b><span id="lessonSub">ScaleUpGym training library · sample clip</span></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="primary" id="startBtn">Give consent &amp; start</button>
+          <button id="calibBtn" disabled>Re-calibrate</button>
+          <button class="danger" id="stopBtn" disabled>End session</button>
+          <div class="switch">
+            <span>Client</span>
+            <div class="toggle" id="modeToggle" title="Switch inference location"></div>
+            <span>Server</span>
+          </div>
+        </div>
+
+        <div class="prompt" id="prompt">
+          <b>You seem to be losing focus.</b> Consider a short break, or revisit this
+          section when you're refreshed — the material will still be here.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: gauges + metrics + chart + perf -->
+  <div style="display:grid; gap:22px;">
+
+    <div class="card">
+      <div class="hd"><h3>Current state</h3><span class="tag" id="srcTag">—</span></div>
+      <div class="bd">
+        <div class="gauges">
+          <div class="gauge">
+            <div class="ring">
+              <svg width="128" height="128">
+                <circle cx="64" cy="64" r="56" stroke="#1B2E49" stroke-width="12" fill="none"/>
+                <circle id="tiredArc" cx="64" cy="64" r="56" stroke="#E6A417" stroke-width="12"
+                        fill="none" stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352"/>
+              </svg>
+              <div class="val"><b id="tiredVal">0</b><small>/ 100</small></div>
+            </div>
+            <div class="lbl">Tiredness</div>
+            <div class="state" id="tiredState">—</div>
+          </div>
+          <div class="gauge">
+            <div class="ring">
+              <svg width="128" height="128">
+                <circle cx="64" cy="64" r="56" stroke="#1B2E49" stroke-width="12" fill="none"/>
+                <circle id="boredArc" cx="64" cy="64" r="56" stroke="#38BDF8" stroke-width="12"
+                        fill="none" stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352"/>
+              </svg>
+              <div class="val"><b id="boredVal">0</b><small>/ 100</small></div>
+            </div>
+            <div class="lbl">Boredom</div>
+            <div class="state" id="boredState">—</div>
+          </div>
+          <div class="gauge">
+            <div class="ring">
+              <svg width="128" height="128">
+                <circle cx="64" cy="64" r="56" stroke="#1B2E49" stroke-width="12" fill="none"/>
+                <circle id="engArc" cx="64" cy="64" r="56" stroke="#5EEAD4" stroke-width="12"
+                        fill="none" stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352"/>
+              </svg>
+              <div class="val"><b id="engVal">0</b><small>/ 100</small></div>
+            </div>
+            <div class="lbl">Engagement</div>
+            <div class="state" id="engState">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>Facial signals</h3><span class="tag">live features</span></div>
+      <div class="bd">
+        <div class="metrics">
+          <div class="metric"><div class="k"><span>PERCLOS</span><span id="perclosPct">0%</span></div>
+            <div class="v" id="perclosV">0.00</div><div class="bar"><i id="perclosBar"></i></div></div>
+          <div class="metric"><div class="k"><span>Blink rate</span><span>/min</span></div>
+            <div class="v" id="blinkV">0</div><div class="bar"><i id="blinkBar"></i></div></div>
+          <div class="metric"><div class="k"><span>Yawns</span><span>session</span></div>
+            <div class="v" id="yawnV">0</div><div class="bar"><i id="yawnBar"></i></div></div>
+          <div class="metric"><div class="k"><span>Off-screen</span><span>gaze</span></div>
+            <div class="v" id="offV">0%</div><div class="bar"><i id="offBar"></i></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>Attention &amp; focus</h3><span class="tag">this session</span></div>
+      <div class="bd">
+        <div class="metrics">
+          <div class="metric"><div class="k"><span>Focus streak</span><span>now</span></div>
+            <div class="v" id="streakV">0s</div><div class="bar"><i id="streakBar" style="background:#5EEAD4"></i></div></div>
+          <div class="metric"><div class="k"><span>Longest streak</span><span>session</span></div>
+            <div class="v" id="longStreakV">0s</div></div>
+          <div class="metric"><div class="k"><span>Attention span</span><span>avg blink gap</span></div>
+            <div class="v" id="spanV">0s</div></div>
+          <div class="metric"><div class="k"><span>Time on task</span><span>focused</span></div>
+            <div class="v" id="onTaskV">0%</div><div class="bar"><i id="onTaskBar" style="background:#5EEAD4"></i></div></div>
+          <div class="metric"><div class="k"><span>Since last blink</span><span>seconds</span></div>
+            <div class="v" id="sinceBlinkV">0s</div></div>
+          <div class="metric"><div class="k"><span>Video watched</span><span>elapsed</span></div>
+            <div class="v" id="watchedV">0s</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>Engagement over time</h3><span class="tag" id="latTag">— ms</span></div>
+      <div class="bd">
+        <div class="chartbox"><canvas id="chart"></canvas></div>
+        <div class="legend">
+          <span><i style="background:#E6A417"></i>Tiredness</span>
+          <span><i style="background:#38BDF8"></i>Boredom</span>
+          <span><i style="background:#5EEAD4"></i>Engagement</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>Performance</h3><span class="tag" id="perfMode">client-side</span></div>
+      <div class="bd">
+        <div class="perf">
+          <div class="p"><b id="pFps">—</b><span>frames / sec</span></div>
+          <div class="p"><b id="pLat">—</b><span>inference ms</span></div>
+          <div class="p"><b id="pBw">0</b><span>KB sent</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<p class="foot-note">
+  EngageSense · MSc/BSc project artefact · <b>Client-side mode</b> runs face detection,
+  feature extraction and classification locally via MediaPipe Face Mesh + TensorFlow.js;
+  no image is transmitted. <b>Server-side mode</b> is provided only to benchmark the
+  conventional architecture (Objective 3). When trained models are absent, a transparent,
+  literature-grounded heuristic detector is used so the system remains fully demonstrable.
+</p>
+</div>
+
+<!-- summary modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="hd"><h2>Session summary</h2><button class="ghost" id="closeModal">Close</button></div>
+    <div class="bd">
+      <div class="sum-grid" id="sumGrid"></div>
+      <div class="chartbox" style="height:180px"><canvas id="sumChart"></canvas></div>
+      <div id="perMinuteWrap" style="margin-top:18px"></div>
+      <div class="controls" style="margin-top:18px">
+        <button class="primary" id="exportBtn">Export session data (CSV)</button>
+        <button id="restartBtn">Start a new session</button>
+      </div>
+      <p class="foot-note">Exported data contains only derived numbers (scores, timings) —
+        never images. Use it for the evaluation study in Chapter 5.</p>
+    </div>
+  </div>
+</div>
+
+<!-- libs -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script type="module" src="./js/ui.js"></script>
+</body>
+</html>

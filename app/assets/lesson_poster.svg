@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#0B1220"/>
+  <rect width="800" height="450" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16263f"/>
+      <stop offset="1" stop-color="#0B1220"/>
+    </linearGradient>
+  </defs>
+  <circle cx="400" cy="200" r="46" fill="none" stroke="#38BDF8" stroke-width="3"/>
+  <path d="M388 178 L388 222 L424 200 Z" fill="#38BDF8"/>
+  <text x="400" y="300" text-anchor="middle" font-family="Inter, Arial" font-size="24" font-weight="700" fill="#E8EEF6">Module 3 · Cash-flow forecasting</text>
+  <text x="400" y="332" text-anchor="middle" font-family="Inter, Arial" font-size="15" fill="#93A6BE">ScaleUpGym training library · 8 min</text>
+</svg>
